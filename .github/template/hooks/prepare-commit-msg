@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import sys, os, re
+from subprocess import check_output
+
+ISSUE_PREFIX = 'RED-'
+
+# Collect the parameters
+commit_msg_filepath = sys.argv[1]
+
+# Figure out which branch we're on
+branch = check_output(['git', 'symbolic-ref', '--short', 'HEAD']).decode("utf-8").strip()
+
+# Populate the commit message with the issue #, if there is one
+if branch.startswith(ISSUE_PREFIX):
+    result = re.match(f'{ISSUE_PREFIX}(.*)', branch)
+    issue_number = result.group(1)
+    commit_prefix = f'{ISSUE_PREFIX}{issue_number}'
+
+    with open(commit_msg_filepath, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(content if content.startswith(commit_prefix) else f'{commit_prefix} -- {content}')
+else:
+    # We could add a prompt here to check for additional types of commits (or other ticket prefixes)
+    # e.g. BUG / HOTFIX / etc
+    print('Hey! Make sure to name your branch like: RED-1234 for helpful commit message prepend.')
